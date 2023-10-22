@@ -31,7 +31,7 @@ library(wesanderson)
 
 ## Project overview and objectives
 
-(About the project)
+
 
 ## Metadata (information about the data)
 
