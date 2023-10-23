@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, echo = FALSE, warning = F}
 # Load libraries, directory & palettes
 library(wesanderson)
+library(readxl)
 proj_palette <- c(wes_palette('GrandBudapest2', 4), wes_palette('GrandBudapest1', 4))
 directori <- dirname(rstudioapi::getActiveDocumentContext()$path)
 setwd(directori)
