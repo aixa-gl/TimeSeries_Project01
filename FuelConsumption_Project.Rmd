@@ -10,7 +10,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, warning = F}
 # Load libraries, directory & palettes
 library(wesanderson)
 proj_palette <- c(wes_palette('GrandBudapest2', 4), wes_palette('GrandBudapest1', 4))
@@ -103,10 +103,33 @@ abline(v=1993:2020,lty=3,col=proj_palette[1])
 # Time Series Descomposition
 
 
+**1. Descriptive centered moving average**: MA with order k = freq/2. We detect the trend & seasonality. 
+
+  - Note we cant use these method to make predictions because it uses observations from the future to elaborate them. It is useful though as it allows us to extract trend deleting seasonality. 
+
+  - LAB AST01 3.3. 
+  
+  - Also apply 4 & 5 (detrended series, seasonality component estimatation, detrended & deseasonalised series)
 
 
+**2. Simple exponential smoothing filter (SES)**: allows us to make predictions estimating the smoothing parameter alpha (and later on, a first level estimation).
 
-# Data loading and basic descriptive analysis
+  - To set alpha we use LAB AST02 5.4 (minimizing MSE, mean square error). We can also use 5.3, finding a grid with the optimal values.
+  
+  - LAB AST02 6 We make predictions (in and out of sample) 
+  
+  - Note that in these part we have done just an estimation of alpha. In LAB AST03 2.1.2 we **also estimate the initial value of the level** so that we do not take the first observation as the initial level (l0). We can optimize (MINIMIZE) the MSE function with the SES estimating the l0 and the alpha value. 
+  
+
+3. Holt exponential smoothing values: allows us to make predictions taking into consideration the slop (b, *pendiente*) and a smoothing parameter (beta).  
+
+  - LAB AST03 2.2 Complete.
+  
+
+4. 
+  
+  
+  
 
 
 \newpage
