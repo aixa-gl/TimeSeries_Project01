@@ -1,6 +1,6 @@
 ---
 title: "Fuel consumption - Temporal Series Analysis"
-author: "Aixa Mas Galiana"
+author: "Aixa Mas Galiana & Carla Armengol"
 date: "2023-10-21"
 output:
   github_document: default
@@ -14,6 +14,10 @@ knitr::opts_chunk$set(echo = TRUE)
 # Load libraries, directory & palettes
 library(wesanderson)
 library(readxl)
+library(knitr)
+library(ggplot2)
+library(dplyr)
+
 proj_palette <- c(wes_palette('GrandBudapest2', 4), wes_palette('GrandBudapest1', 4))
 directori <- dirname(rstudioapi::getActiveDocumentContext()$path)
 setwd(directori)
@@ -27,15 +31,41 @@ setwd(directori)
 
 # Introduction
 
-In the increasing mobility context given since the last century and around the world, fuel has become a substantial asset(?) in the consumption basket. The analysis of fuel consumption is fundamental in order to understand the influence of this resource nowadays, specifically so that trends and seasonal components can be applied to formulate predictions related to users' consumption.  (+)
+In the increasing mobility context given since the last century and around the world, fuel has become a substantial asset(?) in the consumption basket. The analysis of fuel consumption is fundamental in order to understand the influence of this resource nowadays, specifically so that trends and seasonal components can be applied to formulate predictions related to users' consumption. 
 
-Taking into consideration the Consumer Prices Index (CPI; *Índice de precios al consumo*, *IPC*) as a reliable indicator for goods and services prices, the 6.34% of the consumption basket in Spain is associated to fuels and lubricants for personal vehicles. The *indexed* price fluctuations over the years might provide us some valuable information about the fuel consumption oscillations along the time series. 
+(+)
 
-The following plot elaborated with the same time span as the main time series of the project provides us with the general Consumer Prices Index and the Fuel for personal vehicles Prices Index, using the last year as Index 100. It may be observed that general prices are related with fuel prices (positive fluctuations for the CPI generally result in positive fluctuations for fuel prices) but in a lower scale (fuel price fluctuations tend to be larger, resulting in oscillations of more than 20% in some cases). Even though many other factors should be considered when performing an extended analysis of fuel consumption, observing the trend in price over the years can provide certain key insights on the consumption of this resource. 
+In order to understand the behaviour of fuel consumption during these years it might be relevant to study the number of vehicles matriculated in Spain each month, as they are indeed the fuel consumers. We can find in the same database that provides us with the fuel consumption the number of cars, trucks, buses, motorbikes and towing vehicles matriculated in the country each month. We grouped the heavy vehicles (trucks, buses and towing vehicles) and performed a plot of the time series. We observe that cars are the most matriculated vehicles.
+
+From this time series we can observe a certain behaviour during the years, given by the presence of a certain seasonal factor as summer seems to be the season with less vehicles matriculated an by a certain decline in the number of vehicles between 2011 and 2015. I
+
+```{r Matriculated Vehicles, message = F}
+Vehicles_Fuel <- read_excel("Vehicles_Fuel.xlsx")
+
+MCars <- rev(t(Vehicles_Fuel[,2]))
+MCars <- window(ts(MCars, start=2009, freq=12), start=2009)
+
+MMotorbikes <- rev(t(Vehicles_Fuel[,5]))
+MMotorbikes <- window(ts(MMotorbikes, start=2009, freq=12), start=2009)
+
+MBigVeh <- rev(t(apply(data.frame(Vehicles_Fuel[,3], Vehicles_Fuel[,4], Vehicles_Fuel[,6]), 1, sum)))
+MBigVeh <- window(ts(MBigVeh, start=2009, freq=12), start=2009)
+
+plot(MCars, ylim = c(0, max(MCars)+ 50000), col =proj_palette[1], ylab = "Number", xlab = "", main = "Matriculated vehicles in Spain")
+lines(MMotorbikes, col = proj_palette[2])
+lines(MBigVeh, col = proj_palette[3])
+abline(v = c(2009:2019), col = "lightgrey", lty = 2)
+legend("topleft", legend = c("Cars", "Motorbikes", "Big vehicles"), col = proj_palette[1:3], lty = 1)
+```
+
+
+Taking into consideration the Consumer Prices Index (CPI; *Índice de precios al consumo*, *IPC*) as a reliable indicator for goods and services prices, the 6.34% of the consumption basket in Spain is associated to fuels and lubricants for personal vehicles. The *indexed* price fluctuations over the years might provide us some valuable information about the fuel consumption oscillations along the time series.
+
+The following plot elaborated with the same time span as the main time series of the project provides us with the general Consumer Prices Index and the Fuel for personal vehicles Prices Index, using the last year as Index 100. It may be observed that general prices are related with fuel prices (positive fluctuations for the CPI generally result in positive fluctuations for fuel prices) but in a lower scale (fuel price fluctuations tend to be larger, resulting in oscillations of more than 20% in some cases). Even though many other factors should be considered when performing an extended analysis of fuel consumption, observing the trend in price over the years can provide certain key insights on the consumption of this resource.
 
 > Take into consideration than the series has been deseasonalised through evaluating the values taking as an index the same value for the last year (...) REWRITE.
 
-```{r, message = FALSE, echo = F}
+```{r CPI & Fuel CPI, message = FALSE, echo = F}
 # FUEL 4 PERSONAL CONSUMPTION & GENERIC CPI DATA, INDEX = LAST YEAR PRICE
 
 CPI <- read_excel("./IPC_fuel_anualvar.xlsx", skip = 7, n_max = 4)
@@ -53,19 +83,15 @@ abline(v=2009:2020, lty=2, col = "lightgrey")
 abline(h = 0, col = "lightgrey", lty = 2)
 ```
 
-
-++++
-
-
-\ 
+ 
 
 ## Project overview and objectives
 
-The main objective of this analysis is to detect fuel consumption patterns and build reliable models that take into consideration tendencies and seasonal components using a deterministic approach. 
+The main objective of this analysis is to detect fuel consumption patterns and build reliable models that take into consideration tendencies and seasonal components using a deterministic approach.
 
 (Describe what we intend to do in general terms: decomposition of the data in tren, seasonality, etc; interpretation of the trend and causes, interpretation of seasonal indices, etc)
 
-\ 
+ 
 
 ## Metadata (information about the data)
 
@@ -73,77 +99,168 @@ The main objective of this analysis is to detect fuel consumption patterns and b
 
 Consumo de Gasolina en España (Miles de toneladas)
 
-**Fuente**: Ministerio de Fomento. http://www.fomento.gob.es Ministerio de Fomento / Información Estadística / Transporte / Indicadores del transporte
+**Fuente**: Ministerio de Fomento. <http://www.fomento.gob.es> Ministerio de Fomento / Información Estadística / Transporte / Indicadores del transporte
 
-http://www.fomento.gob.es/BE/?nivel=2&orden=18000000
+<http://www.fomento.gob.es/BE/?nivel=2&orden=18000000>
 
-\ 
+ 
 
 ## Project developement (Road-map)
 
 (Description about the steps followed in each part of the project)
 
-
 \newpage
 
 # Exploratory Data Analysis (EDA)
 
+## Time series caracterisation
+
+In order to perform an Exploratory Descriptive Analysis the first step will be related to extract the basic summary and descriptive indicators of the series.
+
+```{r Basic TS attributes, warning = F}
+serie=window(ts(read.table("gasolina.dat"),start=1993,freq=12),start=2009)
+
+
+serie_attr <- c(length(serie), frequency(serie), start(serie), end(serie))
+names(serie_attr) <- c("Length", "Freq", "Start_Year", "Start_Month", "End_Year", "End_Month")
+kable(t(serie_attr))
+```
+
+Through these indicators we observe that the time series has `r serie_attr$Length` observations related to data from `r serie_attr$Start_Year` until `r serie_attr$End_Year`.
+
+
 ## Time Series visualisation
 
 ```{r}
-serie=window(ts(read.table("gasolina.dat"),start=1993,freq=12),start=2009)
-
-plot(serie, main="Fuel consumption in Spain", ylab="thousands of tonnes")
+plot(serie, main="Fuel consumption in Spain", ylab="Thousands of tonnes", xlab = "")
 abline(v=1993:2020,lty=3,col=proj_palette[1])
 ```
+comments related to CPI & number of vehicles matriculated.
 
 ## Summary statistics and Key Insights
+
+
+It might be useful to apply a numerical descriptive analysis to the whole data in order to get a more accurate understanding of fuel consumption in Spain during the data time span.
+
+```{r Basic descriptive}
+descriptive01 <- data.frame(Mean = mean(serie), StDeviation = round(sd(serie), 4), Minimum = min(serie), Q1 = unname(quantile(serie, 0.25)), Median = median(serie), Q3 = unname(quantile(serie, 0.75)), Maximum = max(serie))
+kable(descriptive)
+```
+
+From the summary obtained we observe that the mean fuel consumption each month is `r descriptive$Mean` thousands of tonnes. 
+
+The minimum fuel consumption in a month has been `r descriptive$Minimum` thousands of tonnes and the maximum `r descriptive$Maximum`. We observe a difference of over 200 thousands of tonnes, of a increment in fuel consumption over 75% between these extreme months. 
+
+To evaluate the presence of outliers on the data we plotted a histogram of all the data and we observed a month in which fuel consumption was way over the rest of the months' consumption. To make sure the value is an outlier or at least a rare case we can observe the box-plot below, which verifies the previous assumption.
+
+```{r}
+library(car)
+hist(serie, col = proj_palette[2], main = "Monthly fuel consumption distribution", xlab = "", breaks = 10)
+boxplot(serie, horizontal=TRUE, col = proj_palette[3], main = "Monthly fuel consumption distribution")
+```
+
+We will get the month, year and value of the outlier in order to take the information into consideration for further studies but we will not delete the observation. 
+ 
+The outlier can be found in the seventh position and corresponds to the 2009's July data. This month a total amount of 581 thousants of tonnes of gasoline were consumed. 
+
+```{r}
+kable(serie[which(serie == max(serie))], col.names = "July2009_Consumption")
+```
+
+
+Referring to the consumption during the decade we can use graphical tools to detect the existence of certain behaviours during the years. When evaluating the fuel consumption per year box-plots we observe a clear decreasing tide between 2009 and 2013, period in which Spain was in deep economical crisis. In the time frame between 2013 and 2015 the fuel consumption appears to remain constant on its lower levels, and after the year mentioned the trend becomes positive. 
+
+```{r Consumption by year}
+aux <- data.frame(Year = sort(rep(2009:2019, 12)))
+aux$Fuel <- as.vector(serie)
+
+with(aux, boxplot(Fuel~Year, col = proj_palette[1], main = "Fuel consumption distribution per year", ylab = "Thousands of tonnes"))
+```
+
+These plot allows us to sense a non-constant mean while variability seems to remain relatively constant. 
+
+To finish with the data descriptive analysis we intend to verify the existence of seasonality and we will do that using a *lag-plot* with 11 lags. We can also observe autocorrelation with the next observation using this plot with 1 lag. In both cases we observe that the time-series observations and their lags are most definitely showing positive correlation. We can confirm the existence of seasonality from the second plot and establish there probably is autocorrelation (at least order 1) from the first one. 
+```{r}
+lag.plot(serie, set.lags = c(1, 12), diag.col = proj_palette[5], lwd=0.01, labels = FALSE, pch = ".", main = "Detection of autocorrelation (order 1) \nand seasonality in the time-series", layou = c(1,2))
+```
+
+
+
 
 \newpage
 
 # Time Series Descomposition
 
+## Descriptive filters
 
-**1. Descriptive centered moving average**: MA with order k = freq/2. We detect the trend & seasonality. 
+In order to detect and describe the existence of trend and seasonality in the time series, we will use a linear filter centred in the analysed value. 
 
-  - Note we cant use these method to make predictions because it uses observations from the future to elaborate them. It is useful though as it allows us to extract trend deleting seasonality. 
+The filter applied consists in a moving average that takes into consideration the existence of seasonality and allows us to extract the trend from the time series. To be able to delete the effect seasonality has on the data we will need the filter to take into consideration as much observations back and further as the seasonality order. We observed that fuel consumption has a yearly pattern, so the order for this time series' seasonality would be 12. Therefore, the filter applied will take the six previous observations and the six following for each piece of data. 
 
-  - LAB AST01 3.3. 
-  
-  - Also apply 4 & 5 (detrended series, seasonality component estimatation, detrended & deseasonalised series)
+Given the trend and the time series' values it is possible (and interesting) to delete the trend from the series, so that we are given a detrended time series. 
+
+```{r}
+k=6 #Order 2*k=12
+trend = stats::filter(serie, c(1/(4*k), rep(1/(2*k), 2*k-1), 1/(4*k)), sides=2) 
+plot(serie, main = "Fuel consumption trend", ylab = "Thousands of tonnes")
+lines(trend,col=proj_palette[1],lwd=2)
+```
+
+For the descriptive trend given we observe a decreasing pattern until 2013 and a relatively constant - or a slowly increasing - tendency afterwards. 
+
+Once the trend of the series is found we might want to delete it from the series itself as these operation will allow us to evaluate the seasonal component of the series. Note that as the linear filter is centred and takes into consideration the six previous and posterior observations and so the six first and the six last observations do not have a trend and, therefore, a detrended value. This filters' feature is the same that will not allow us to make predictions. 
+
+```{r}
+plot(serie-trend,main="Detrended fuel consumption", ylab = "")
+abline(h=0)
+abline(v=2009:2020,col=proj_palette[2],lty=3)
+```
+
+We will now estimate the seasonal component or index as the deviation a certain month's mean adds to the general mean. We observe positive values for the months 6 to 10, meaning the fuel consumption during the summer season and until october (included) is greater than during the rest of the year. July and August are the months with higher fuel consumption and January and February are the ones with lower consumption. 
+
+```{r}
+seas=apply(matrix(serie-trend,nrow=2*k), 1, mean, na.rm=T) # vector de componente estacional asociado a cada mes del año
+
+plot(seas, type="h", lwd=3, main="Seasonal components", col="grey")
+lines(seas, col= proj_palette[3])
+abline(h=0)
+
+```
+
+The last step on this analysis will provide us with the *detrended and deseasonalised* series, allowing us to evaluate if the residuals are distributed in a constant way during time. [NO SÉ SI HACE FALTA]
+
+```{r}
+plot(serie-trend-seas)
+abline(h=0)
+abline(v=2008:2020,col=proj_palette[6],lty=3)
+```
+
+
+# Exponential Smoothing
 
 
 **2. Simple exponential smoothing filter (SES)**: allows us to make predictions estimating the smoothing parameter alpha (and later on, a first level estimation).
 
-  - To set alpha we use LAB AST02 5.4 (minimizing MSE, mean square error). We can also use 5.3, finding a grid with the optimal values.
-  
-  - LAB AST02 6 We make predictions (in and out of sample) 
-  
-  - Note that in these part we have done just an estimation of alpha. In LAB AST03 2.1.2 we **also estimate the initial value of the level** so that we do not take the first observation as the initial level (l0). We can optimize (MINIMIZE) the MSE function with the SES estimating the l0 and the alpha value. 
-  
+-   To set alpha we use LAB AST02 5.4 (minimizing MSE, mean square error). We can also use 5.3, finding a grid with the optimal values.
 
-3. Holt exponential smoothing values: allows us to make predictions taking into consideration the slop (b, *pendiente*) and a smoothing parameter (beta).  
+-   LAB AST02 6 We make predictions (in and out of sample)
 
-  - LAB AST03 2.2 Complete.
-  
+-   Note that in these part we have done just an estimation of alpha. In LAB AST03 2.1.2 we **also estimate the initial value of the level** so that we do not take the first observation as the initial level (l0). We can optimize (MINIMIZE) the MSE function with the SES estimating the l0 and the alpha value.
 
-4. 
-  
-  
-  
+3.  Holt exponential smoothing values: allows us to make predictions taking into consideration the slop (b, *pendiente*) and a smoothing parameter (beta).
 
+-   LAB AST03 2.2 Complete.
+
+4.  *Hace falta aplicar filtros que sepamos que son incorrectos? Es decir, hemos detectado existencia de estacionalidad y tendencia, por lo que sabemos que el filtro SES no será un buen approach. Podemos aplicar directamente Holt-Winters additivo o tenemos que aplicar filtros que sabemos que son incorrectos para esta serie??*
 
 \newpage
-
-
 
 # Referencies
 
 IPC on fuel consumption:
 
-https://www.ine.es/jaxiT3/Datos.htm?t=23714#!tabs-tabla
+<https://www.ine.es/jaxiT3/Datos.htm?t=23714#!tabs-tabla>
 
-
-
+https://apps.fomento.gob.es/Boletinonline/?nivel=2&orden=18000000
 
 
